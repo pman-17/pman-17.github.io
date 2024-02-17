@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pac-Man Game</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    #game-board {
+        width: 600px;
+        height: 400px;
+        border: 2px solid black;
+        position: relative;
+    }
+    .pacman, .ghost {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: yellow;
+    }
+    .ghost {
+        background-color: red;
+    }
+</style>
+</head>
+<body>
+<div id="game-board">
+    <div id="pacman" class="pacman"></div>
+    <div id="ghost" class="ghost"></div>
+</div>
+
+<script>
+    const gameBoard = document.getElementById('game-board');
+    const pacman = document.getElementById('pacman');
+    const ghost = document.getElementById('ghost');
+
+    let pacmanX = 50;
+    let pacmanY = 50;
+    let ghostX = 200;
+    let ghostY = 200;
+
+    const movePacman = (direction) => {
+        switch(direction) {
+            case 'ArrowUp':
+                pacmanY -= 5;
+                break;
+            case 'ArrowDown':
+                pacmanY += 5;
+                break;
+            case 'ArrowLeft':
+                pacmanX -= 5;
+                break;
+            case 'ArrowRight':
+                pacmanX += 5;
+                break;
+        }
+        pacman.style.left = `${pacmanX}px`;
+        pacman.style.top = `${pacmanY}px`;
+    };
+
+    const moveGhost = () => {
+        // Implement ghost movement logic here
+        // For simplicity, let's make the ghost randomly move
+        const randomDirection = Math.floor(Math.random() * 4);
+        switch(randomDirection) {
+            case 0:
+                ghostX += 5;
+                break;
+            case 1:
+                ghostY += 5;
+                break;
+            case 2:
+                ghostX -= 5;
+                break;
+            case 3:
+                ghostY -= 5;
+                break;
+        }
+        ghost.style.left = `${ghostX}px`;
+        ghost.style.top = `${ghostY}px`;
+    };
+
+    document.addEventListener('keydown', (e) => {
+        movePacman(e.key);
+    });
+
+    setInterval(moveGhost, 1000); // Move ghost every second
+</script>
+</body>
+</html>
