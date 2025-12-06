@@ -5,7 +5,7 @@ def get_task():
     return task
 
 def get_message():
-    message = simpledialog.askstring('Message','Ender the secret message: ')
+    message = simpledialog.askstring('Message','Enter the secret message: ')
     return message
 
 def is_even(number):

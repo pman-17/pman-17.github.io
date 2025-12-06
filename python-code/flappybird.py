@@ -21,7 +21,7 @@ BIRD_COLOR = (255, 255, 0)
 
 # Set up the screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Flappy Bird")
+pygame.display.set_caption("Flappy Bird") 
 
 clock = pygame.time.Clock()
 
