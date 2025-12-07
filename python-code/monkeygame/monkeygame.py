@@ -91,7 +91,6 @@ run = True
 while run:
 
 	screen.blit(bg_img, (0, 0))
-	screen.blit(sun_img, (100, 100))
 
 	world.draw()
 
