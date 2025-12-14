@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Momo+Trust+Display&display=swap" rel="stylesheet">
+        <title>Frogy Gang facts</title>
+        <style>
+            * {
+                font-family: 'Momo Trust Display', sans-serif;
+                font-style: normal;
+                text-align: center;
+                color: #034748;
+            }
+            body {
+                background-color: #a0e7e5;
+            }
+            h1 {
+                color: #017374;
+            }
+            p {
+                font-size: 18px;
+                color: #034748;
+            }
+            .fact-box {
+                width: 70%;
+                margin: 20px auto;
+                padding: 15px;
+                border: 3px solid #017374;
+                border-radius: 10px;
+                background-color: #b4f8f8;
+                box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.1);
+            }
+            ::selection {
+                background: #017374;
+                color: white;
+            }
+            button {
+                border-radius: 25px;
+                cursor: pointer;
+                font-family: 'Momo Trust Display', sans-serif;
+                font-size: 18px;
+                padding: 10px;
+                margin: 10px;
+                width: 110px;
+                background-color: #017374;
+                color: white;
+                border: black solid 5px;
+            }
+            button:hover {
+                transform: scale(1.1);
+                transition: 0.3s;
+            }
+            button:not(:hover) {
+                transform: scale(1);
+                transition: 0.3s;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Welcome</h1>
+        <h3>If you know what the Frogy Gang is, than you'll understand what this is</h3>
+        <div class="fact-box">
+            <h2>Frogy Gang Fact 1</h2>
+            <p>The gang has three members.</p>
+        </div>
+        <div class="fact-box">
+            <h2>Frogy Gang Fact 2</h2>
+            <p>The gang's favorite food is flies.</p>
+        </div>
+        <div class="fact-box">
+            <h2>Frogy Gang Fact 3</h2>
+            <p>The Drippy Gang is getting replaced by it.</p>
+        </div>
+        <div class="weapon-selection">
+            <button id="gun1">Gun 1</button>
+            <button id="gun2">Gun 2</button>
+            <button id="weapon1">Weapon 1</button>
+            <button id="weapon2">Weapon 2</button>
+        </div>
+        <script>
+            let draggingElement = null;
+            let offsetX = 0;
+            let offsetY = 0;
+            let velocityX = 0;
+            let velocityY = 0;
+            let lastX = 0;
+            let lastY = 0;
+
+            document.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('weapon')) return; // Prevent dragging weapons
+            draggingElement = e.target;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            offsetX = e.clientX - draggingElement.getBoundingClientRect().left;
+            offsetY = e.clientY - draggingElement.getBoundingClientRect().top;
+            draggingElement.style.position = 'absolute';
+            draggingElement.style.zIndex = 1000;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+            if (!draggingElement) return;
+            
+            velocityX = e.clientX - lastX;
+            velocityY = e.clientY - lastY;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            
+            draggingElement.style.left = (e.clientX - offsetX) + 'px';
+            draggingElement.style.top = (e.clientY - offsetY) + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+            if (draggingElement) {
+            applyPhysics(draggingElement);
+            draggingElement = null;
+            }
+            });
+
+            function applyPhysics(el) {
+            let x = parseFloat(el.style.left) || el.getBoundingClientRect().left;
+            let y = parseFloat(el.style.top) || el.getBoundingClientRect().top;
+            const gravity = 0.5;
+            const friction = 0.98;
+            
+            function animate() {
+            velocityY += gravity;
+            velocityX *= friction;
+            velocityY *= friction;
+            
+            x += velocityX;
+            y += velocityY;
+
+            // Limit the falling to the bottom of the window
+            if (y > window.innerHeight - el.offsetHeight) {
+            y = window.innerHeight - el.offsetHeight;
+            velocityY = 0; // Stop falling
+            }
+            
+            // Keep within horizontal bounds
+            if (x < 0) {
+            x = 0;
+            velocityX = 0;
+            } else if (x + el.offsetWidth > window.innerWidth) {
+            x = window.innerWidth - el.offsetWidth;
+            velocityX = 0;
+            }
+            
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            
+            if (Math.abs(velocityX) > 0.1 || Math.abs(velocityY) > 0.1) {
+            requestAnimationFrame(animate);
+            }
+            }
+            
+            animate();
+            }
+        </script>
+    </body>
+</html>
