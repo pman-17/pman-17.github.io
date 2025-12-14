@@ -1,0 +1,29 @@
+<style>
+    .imageContainer{
+         position: absolute;
+     }
+
+.hide{
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .5s, visibility .5s;
+}
+
+.visible{
+  visibility: visible;
+  opacity: 1;
+}
+</style>
+
+
+<div id="Lightning" class="container">
+    <img class="imageContainer visible" src="envelope.png" width="1000">
+    <img id="secondImg" class="imageContainer hide"   src="mrs_gray.png" width="1000">
+</div>
+
+
+<script type="text/javascript">
+document.getElementById("Lightning").onclick = function() {
+   document.getElementById("secondImg").classList.add("visible");
+};
+</script>

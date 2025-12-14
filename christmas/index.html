@@ -2,17 +2,18 @@
 <html lang="en">
     <meta charset="UTF-8">
     <head>
-        <script src="snow.js"></script>
+        <title>Christmas Card</title>
         <style>
             * {
                 color: pink;
                 font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
             }
-            body {
-                background-image: url(background.jpg);
+            html,body {
+                background-image: url(img/background.jpg);
                 
                 background-repeat: no-repeat;
                 animation: fadeIn 3s;
+                margin:0;height:100%;
             }
             @keyframes fadeIn {
                 from {
@@ -22,21 +23,12 @@
                     opacity: 1;
                 }
             }
-            .container {
-                margin: auto;
-            }
             .card {
-                border-radius: 10px;
-                border: 6px solid black;
-                width: 40%;
+                width: 60%;
                 margin: 0 auto;
-                height: 60%;
-                padding:20px;
-                background-color: rgb(228, 72, 103);
             }
             img {
                 border-radius: 10px;
-                border: 5px solid black;
             }
             img:hover {
                 transform: translate(0, -14px);
@@ -54,29 +46,46 @@
                 background-color: black;
                 text-align: center;
             }
+
+            .imageContainer{
+                position: absolute;
+            }
+
+            .hide{
+                visibility: hidden;
+                opacity: 0;
+                transition: opacity .5s, visibility .5s;
+            }
+
+            .visible{
+                visibility: visible;
+                opacity: 1;
+            }
+            .xmas {
+                width: 55%;
+            }
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="card">
-                <h1>To Mrs Gray,</h1>
-                <h3>Click this image for a special surprise...</h3>
-                <audio id="last-xmas" src="Last Christmas.mp3"></audio>
-                <img id="img" src="mrs_gray.png" width="380px" height="auto">
-                <script>
-                    var image = document.getElementById('img');
-                    var audio = document.getElementById('last-xmas');
+        <div id="Lightning" class="card">
+                <audio id="last-xmas" src="audio/Last Christmas.mp3"></audio>
 
-                    image.addEventListener('click', playMusic);
+                    <img class="xmas imageContainer visible" src="img/Mrs_Gray_card.png" >
+                    <img id="secondImg" class="xmas imageContainer hide"   src="img/mrs_gray.png" >
+        </div>
+    </body>
+    <script>
+                    var audio = document.getElementById('last-xmas');
 
                     function playMusic(){
                         audio.play();
                     }
+
+                    document.getElementById("Lightning").onclick = function() {
+                        document.getElementById("secondImg").classList.add("visible");
+                        playMusic();
+                    };
                 </script>
-            </div>
-        </div>
-        <footer>
-            <h1>From Ryan</h1>
-        </footer>
-    </body>
+                        <script src="snow.js"></script>
+
 </html>
