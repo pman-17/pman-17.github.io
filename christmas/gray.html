@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+    <meta charset="UTF-8">
+    <head>
+        <title>Christmas Card</title>
+        <style>
+            * {
+                color: pink;
+                font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            }
+            html,body {
+                background-image: url(img/background.jpg);
+                
+                background-repeat: no-repeat;
+                animation: fadeIn 3s;
+                margin:0;height:100%;
+            }
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .card {
+                width: 60%;
+                margin: 0 auto;
+            }
+            img {
+                border-radius: 10px;
+            }
+            img:hover {
+                transform: translate(0, -14px);
+                transition: 0.3s;
+                cursor: pointer;
+                
+            }
+            img:not(:hover) {
+                transition: 0.3s;
+            }
+            footer {
+                width: auto;
+                height: 50px;
+                border-radius: 10px;
+                background-color: black;
+                text-align: center;
+            }
+
+            .imageContainer{
+                position: absolute;
+            }
+
+            .hide{
+                visibility: hidden;
+                opacity: 0;
+                transition: opacity .5s, visibility .5s;
+            }
+
+            .visible{
+                visibility: visible;
+                opacity: 1;
+            }
+            .xmas {
+                width: 55%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="Lightning" class="card">
+                <audio id="last-xmas" src="audio/Last Christmas.mp3"></audio>
+
+                    <img class="xmas imageContainer visible" src="img/Mrs_Gray_card.png" >
+                    <img id="secondImg" class="xmas imageContainer hide"   src="img/mrs_gray.png" >
+        </div>
+    </body>
+    <script>
+                    var audio = document.getElementById('last-xmas');
+
+                    function playMusic(){
+                        audio.play();
+                    }
+
+                    document.getElementById("Lightning").onclick = function() {
+                        document.getElementById("secondImg").classList.add("visible");
+                        playMusic();
+                    };
+                </script>
+                        <script src="snow.js"></script>
+
+</html>
