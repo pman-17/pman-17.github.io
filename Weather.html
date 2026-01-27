@@ -1,37 +1,60 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+        <style>
+            #chartContainer {
+                width: 500px;
+                height: 300px;
+            }
+            input {
+                padding: 3px;
+            }
+        </style>
     </head>
     <body>
         <input type="text" id="cityInput" placeholder="Enter a city">
-        <button onclick="getWeatherData()">Get Weather</button>
+        <button class="btn btn-primary" onclick="getWeatherData()">Get Weather</button>
         <div id="chartContainer">
             <canvas id="weatherChart"></canvas>
         </div>
     </body>
     <script>
-        async function getWeatherData(){
+        async function getWeatherData() {
             const city = document.getElementById('cityInput').value;
-
-            const geocodeURL = 'https://geocoding-api.open-meteo.com/v1/search?name=${city}';
-
-            const geoResponse = await fetch(geocodeURL, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            const geoData = await geoResponse.json();
-
-            const lat = geoData.results[0].latitude;
-            const lon = geoData.results[0].longitude;
-
-            const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&past_days=7`;
-
-            const weatherResponse = await fetch(weatherUrl);
-            const weatherData = await weatherResponse.json();
-
-            createChart(weatherData)
+            
+            if (!city) {
+                alert('Please enter a city name!');
+                return;
+            }
+            
+            try {
+                // Get coordinates for the city
+                const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`;
+                const geoResponse = await fetch(geocodeUrl);
+                const geoData = await geoResponse.json();
+                
+                if (!geoData.results || geoData.results.length === 0) {
+                    alert('City not found! Try another name.');
+                    return;
+                }
+                
+                const lat = geoData.results[0].latitude;
+                const lon = geoData.results[0].longitude;
+                
+                // Get historical weather data
+                const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&past_days=7`;
+                const weatherResponse = await fetch(weatherUrl);
+                const weatherData = await weatherResponse.json();
+                
+                createChart(weatherData);
+            } catch (error) {
+                alert('Error getting weather data. Please try again!');
+                console.error(error);
+            }
         }
+
         function createChart(data){
             const ctx = document.getElementById('weatherChart').getContext('2d');
 
