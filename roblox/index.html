@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Roblox API</title>
+    </head>
+    <body>
+        <input id="input" placeholder="Enter Roblox Game">
+        <button id="myButton">Get Data</button>
+        <h2>Visits: <span id="visit"></span></h2>
+    </body>
+    <script>
+        document.getElementById("myButton").addEventListener("click", function() {
+            const universe_id = document.getElementById("input").value;
+            console.log(universe_id);
+            fetch(`https://games.roblox.com/v1/games?universeIds=${universe_id}`, {mode: 'cors'})
+            .then(response => {
+                response.json();
+            })
+            .then(data => {
+                visit.innerHTML = data.visits;
+                console.log(data);
+            })
+        });           
+    </script>
+</html>
