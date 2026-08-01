@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basketball Bounce Counter</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#121212;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.container{
+    width:420px;
+    max-width:95%;
+    text-align:center;
+    background:#1d1d1d;
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 0 25px rgba(255,140,0,.3);
+}
+
+h1{
+    color:orange;
+}
+
+.counter{
+    font-size:80px;
+    margin:20px;
+    font-weight:bold;
+}
+
+button{
+    padding:12px 18px;
+    margin:6px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:16px;
+    background:orange;
+    color:white;
+    font-weight:bold;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+#status{
+    margin-top:20px;
+    font-size:18px;
+}
+
+#meter{
+    width:100%;
+    height:20px;
+    border-radius:10px;
+    background:#444;
+    overflow:hidden;
+    margin-top:20px;
+}
+
+#fill{
+    width:0%;
+    height:100%;
+    background:lime;
+    transition:.05s;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>🏀 Basketball Bounce Counter</h1>
+
+<div class="counter" id="count">0</div>
+
+<button onclick="startCounting()">Start Counting</button>
+<button onclick="stopCounting()">Stop</button>
+<br>
+<button onclick="calibrate()">Recalibrate</button>
+<button onclick="testMode()">Test</button>
+<button onclick="resetCounter()">Reset</button>
+
+<div id="meter">
+<div id="fill"></div>
+</div>
+
+<div id="status">
+Waiting...
+</div>
+
+</div>
+
+<script>
+
+let audioContext;
+let analyser;
+let microphone;
+let dataArray;
+
+let calibratedThreshold = 80;
+let bounceCount = 0;
+
+let listening=false;
+let testing=false;
+
+let lastBounce=0;
+const cooldown=180;
+
+async function setupMic(){
+
+if(audioContext) return;
+
+const stream=await navigator.mediaDevices.getUserMedia({
+audio:true
+});
+
+audioContext=new AudioContext();
+
+microphone=audioContext.createMediaStreamSource(stream);
+
+analyser=audioContext.createAnalyser();
+analyser.fftSize=1024;
+
+microphone.connect(analyser);
+
+dataArray=new Uint8Array(analyser.frequencyBinCount);
+
+requestAnimationFrame(loop);
+
+}
+
+function averageVolume(){
+
+analyser.getByteFrequencyData(dataArray);
+
+let sum=0;
+
+for(let i=0;i<dataArray.length;i++){
+sum+=dataArray[i];
+}
+
+return sum/dataArray.length;
+
+}
+
+function loop(){
+
+if(!analyser){
+requestAnimationFrame(loop);
+return;
+}
+
+const volume=averageVolume();
+
+document.getElementById("fill").style.width=Math.min(volume*2,100)+"%";
+
+if(testing){
+
+document.getElementById("status").innerText=
+"Volume: "+volume.toFixed(1);
+
+}
+
+if(listening){
+
+const now=performance.now();
+
+if(volume>calibratedThreshold && now-lastBounce>cooldown){
+
+lastBounce=now;
+
+bounceCount++;
+
+document.getElementById("count").innerText=bounceCount;
+
+}
+
+}
+
+requestAnimationFrame(loop);
+
+}
+
+async function calibrate(){
+
+await setupMic();
+
+document.getElementById("status").innerText=
+"Bounce the basketball several times for 5 seconds...";
+
+let readings=[];
+
+let start=Date.now();
+
+let timer=setInterval(()=>{
+
+readings.push(averageVolume());
+
+},30);
+
+setTimeout(()=>{
+
+clearInterval(timer);
+
+let avg=readings.reduce((a,b)=>a+b,0)/readings.length;
+
+calibratedThreshold=avg+18;
+
+document.getElementById("status").innerHTML=
+"Calibration Complete<br>Threshold: "+
+calibratedThreshold.toFixed(1);
+
+},5000);
+
+}
+
+async function startCounting(){
+
+await setupMic();
+
+bounceCount=0;
+
+document.getElementById("count").innerText="0";
+
+listening=true;
+testing=false;
+
+document.getElementById("status").innerText=
+"Counting bounces...";
+
+}
+
+function stopCounting(){
+
+listening=false;
+
+document.getElementById("status").innerText=
+"Stopped.";
+
+}
+
+async function testMode(){
+
+await setupMic();
+
+testing=true;
+listening=false;
+
+document.getElementById("status").innerText=
+"Testing microphone... Bounce the ball.";
+
+}
+
+function resetCounter(){
+
+bounceCount=0;
+
+document.getElementById("count").innerText=0;
+
+document.getElementById("status").innerText=
+"Reset.";
+
+}
+
+</script>
+
+</body>
+</html>
