@@ -60,7 +60,7 @@
         // the library itself, so it fails that check even though it would
         // resolve fine in a normal fetch(). Converting it explicitly here
         // fixes that, and works both locally and on GitHub Pages.
-        const URL = new URL("./Model/bball_bounce/", window.location.href).href;
+        const MODEL_URL = new URL("./Model/bball_bounce/", window.location.href).href;
 
         let recognizer;
         const statusEl = document.getElementById("status");
@@ -68,8 +68,8 @@
         const startBtn = document.getElementById("start-btn");
 
         async function createModel() {
-            const checkpointURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+            const checkpointURL = MODEL_URL + "model.json";
+            const metadataURL = MODEL_URL + "metadata.json";
 
             const recognizer = speechCommands.create(
                 "BROWSER_FFT",
