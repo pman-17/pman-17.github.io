@@ -14,6 +14,12 @@
             font-size: 16px;
             padding: 10px 20px;
             cursor: pointer;
+            margin-right: 8px;
+            margin-top: 8px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         #label-container div {
             padding: 8px;
@@ -26,12 +32,64 @@
             margin-top: 12px;
             color: #666;
         }
+        .settings {
+            margin-top: 20px;
+            padding: 12px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .settings label {
+            display: block;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .settings input {
+            width: 100px;
+            padding: 4px;
+            margin-top: 2px;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 12px;
+            background: #eef6ff;
+            border-radius: 6px;
+        }
+        .stats div {
+            font-size: 18px;
+            margin-top: 4px;
+        }
+        #timer {
+            font-size: 32px;
+            font-weight: bold;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
-    <h1>Teachable Machine Audio Model</h1>
+    <h1>Basketball Bounce Counter</h1>
     <button type="button" id="start-btn">Start Listening</button>
+    <button type="button" id="reset-timer-btn" disabled>Reset Timer</button>
     <div id="status"></div>
+
+    <div class="settings">
+        <strong>Settings</strong>
+        <label>
+            Detection threshold (0 - 1)
+            <input type="number" id="threshold-input" value="0.8" min="0" max="1" step="0.01">
+        </label>
+        <label>
+            Timer length (seconds)
+            <input type="number" id="timer-length-input" value="120" min="1" step="1">
+        </label>
+    </div>
+
+    <div class="stats">
+        <div>Bounces detected: <span id="bounce-count">0</span></div>
+        <div>Timer: <span id="timer">--:--</span></div>
+        <div id="timer-status" style="color:#666; font-size: 14px;"></div>
+    </div>
+
     <div id="label-container"></div>
 
     <!-- TensorFlow.js and Speech Commands libraries -->
@@ -39,7 +97,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.4.0/dist/speech-commands.min.js"></script>
 
     <script type="text/javascript">
-        // IMPORTANT: This path is relative to THIS html file's location.
+        // ---------------------------------------------------------------
+        // MODEL PATH
+        // ---------------------------------------------------------------
         // This file expects to sit next to a "Model" folder, e.g.:
         //   bounce/
         //     bball.html   <- this file
@@ -48,25 +108,159 @@
         //         model.json
         //         metadata.json
         //
-        // You MUST load this page through a local web server (not by
-        // double-clicking the file), e.g. from the parent of "bounce":
-        //   python3 -m http.server 8000
-        // then visit:
-        //   http://localhost:8000/bounce/bball.html
-        // Build an ABSOLUTE URL (https://...) from the relative path.
-        // The speech-commands library checks the literal string prefix of
-        // the URL and requires it to start with http://, https://, or
-        // file://. A relative path like "./Model/..." is NOT resolved by
-        // the library itself, so it fails that check even though it would
-        // resolve fine in a normal fetch(). Converting it explicitly here
-        // fixes that, and works both locally and on GitHub Pages.
+        // Build an ABSOLUTE URL (https://...) from the relative path, since
+        // the speech-commands library requires the URL string to literally
+        // start with http://, https://, or file://.
         const MODEL_URL = new URL("./Model/bball_bounce/", window.location.href).href;
 
+        // The class label your Teachable Machine model uses for a bounce.
+        // Change this if your model's label is named differently
+        // (e.g. "bounce", "Bounce", "Ball Bounce", etc).
+        const BOUNCE_LABEL = "bounce";
+
+        // ---------------------------------------------------------------
+        // OPTIONAL: use a real mp3 file for the alert instead of the
+        // generated beep. Put an mp3 next to this file and set the path
+        // below, then set USE_MP3_ALERT to true.
+        // ---------------------------------------------------------------
+        const USE_MP3_ALERT = false;
+        const ALERT_MP3_PATH = "./alert.mp3";
+
+        // ---------------------------------------------------------------
+        // State
+        // ---------------------------------------------------------------
         let recognizer;
+        let bounceCount = 0;
+        let timerIntervalId = null;
+        let timerEndTimestamp = null; // ms epoch time when timer should end
+        let timerRunning = false;
+        let timerLengthSeconds = 120; // overwritten by input field
+        let threshold = 0.8;          // overwritten by input field
+
+        // ---------------------------------------------------------------
+        // Element references
+        // ---------------------------------------------------------------
         const statusEl = document.getElementById("status");
         const labelContainer = document.getElementById("label-container");
         const startBtn = document.getElementById("start-btn");
+        const resetTimerBtn = document.getElementById("reset-timer-btn");
+        const thresholdInput = document.getElementById("threshold-input");
+        const timerLengthInput = document.getElementById("timer-length-input");
+        const bounceCountEl = document.getElementById("bounce-count");
+        const timerEl = document.getElementById("timer");
+        const timerStatusEl = document.getElementById("timer-status");
 
+        // ---------------------------------------------------------------
+        // Alert sound
+        // ---------------------------------------------------------------
+        function playAlert() {
+            if (USE_MP3_ALERT) {
+                const audio = new Audio(ALERT_MP3_PATH);
+                audio.play().catch(err => console.error("Could not play mp3 alert:", err));
+                return;
+            }
+
+            // Generated beep alert (no external file needed).
+            // Plays three short beeps.
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContextClass();
+
+            function beep(startTime) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.2, startTime);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + 0.25);
+            }
+
+            const now = ctx.currentTime;
+            beep(now);
+            beep(now + 0.35);
+            beep(now + 0.7);
+        }
+
+        // ---------------------------------------------------------------
+        // Timer
+        // ---------------------------------------------------------------
+        function formatTime(totalSeconds) {
+            const s = Math.max(0, Math.ceil(totalSeconds));
+            const mins = Math.floor(s / 60);
+            const secs = s % 60;
+            return mins + ":" + String(secs).padStart(2, "0");
+        }
+
+        function updateTimerDisplay() {
+            if (!timerRunning) {
+                timerEl.textContent = formatTime(timerLengthSeconds);
+                return;
+            }
+            const remainingMs = timerEndTimestamp - Date.now();
+            const remainingSeconds = remainingMs / 1000;
+            timerEl.textContent = formatTime(remainingSeconds);
+
+            if (remainingMs <= 0) {
+                completeTimer();
+            }
+        }
+
+        function startTimer() {
+            if (timerRunning) return; // already running
+            timerRunning = true;
+            timerEndTimestamp = Date.now() + timerLengthSeconds * 1000;
+            timerStatusEl.textContent = "Timer running...";
+            resetTimerBtn.disabled = false;
+
+            timerIntervalId = setInterval(updateTimerDisplay, 250);
+            updateTimerDisplay();
+        }
+
+        function completeTimer() {
+            clearInterval(timerIntervalId);
+            timerIntervalId = null;
+            timerRunning = false;
+            timerEl.textContent = "0:00";
+            timerStatusEl.textContent = "Time's up!";
+            playAlert();
+        }
+
+        function resetTimer() {
+            clearInterval(timerIntervalId);
+            timerIntervalId = null;
+            timerRunning = false;
+            timerEndTimestamp = null;
+            timerEl.textContent = formatTime(timerLengthSeconds);
+            timerStatusEl.textContent = "Timer reset. Waiting for next bounce to start.";
+        }
+
+        resetTimerBtn.addEventListener("click", resetTimer);
+
+        // ---------------------------------------------------------------
+        // Settings inputs
+        // ---------------------------------------------------------------
+        function readSettings() {
+            const t = parseFloat(thresholdInput.value);
+            if (!isNaN(t) && t >= 0 && t <= 1) {
+                threshold = t;
+            }
+            const len = parseInt(timerLengthInput.value, 10);
+            if (!isNaN(len) && len > 0) {
+                timerLengthSeconds = len;
+                if (!timerRunning) {
+                    timerEl.textContent = formatTime(timerLengthSeconds);
+                }
+            }
+        }
+
+        thresholdInput.addEventListener("change", readSettings);
+        timerLengthInput.addEventListener("change", readSettings);
+
+        // ---------------------------------------------------------------
+        // Model
+        // ---------------------------------------------------------------
         async function createModel() {
             const checkpointURL = MODEL_URL + "model.json";
             const metadataURL = MODEL_URL + "metadata.json";
@@ -84,6 +278,8 @@
 
         async function init() {
             startBtn.disabled = true;
+            readSettings();
+            timerEl.textContent = formatTime(timerLengthSeconds);
             statusEl.textContent = "Loading model...";
 
             try {
@@ -95,7 +291,7 @@
                 return;
             }
 
-            statusEl.textContent = "Model loaded. Listening for sound...";
+            statusEl.textContent = "Model loaded. Listening for bounces...";
 
             const classLabels = recognizer.wordLabels();
             labelContainer.innerHTML = "";
@@ -103,24 +299,52 @@
                 labelContainer.appendChild(document.createElement("div"));
             }
 
+            // Find index of the bounce class (case-insensitive match).
+            let bounceIndex = classLabels.findIndex(
+                label => label.toLowerCase() === BOUNCE_LABEL.toLowerCase()
+            );
+            if (bounceIndex === -1) {
+                // Fall back: if there are exactly 2 classes, assume the
+                // one that is NOT "background noise" / "_background_noise_"
+                // is the bounce class.
+                bounceIndex = classLabels.findIndex(
+                    label => !/background/i.test(label)
+                );
+            }
+            if (bounceIndex === -1) {
+                statusEl.textContent =
+                    "Warning: could not find a '" + BOUNCE_LABEL +
+                    "' class label. Check BOUNCE_LABEL in the code matches your model's label.";
+            }
+
             recognizer.listen(result => {
                 const scores = result.scores;
+
                 for (let i = 0; i < classLabels.length; i++) {
                     labelContainer.childNodes[i].innerHTML =
                         classLabels[i] + ": " + scores[i].toFixed(2);
                 }
+
+                if (bounceIndex !== -1 && scores[bounceIndex] >= threshold) {
+                    bounceCount++;
+                    bounceCountEl.textContent = bounceCount;
+
+                    if (!timerRunning) {
+                        startTimer();
+                    }
+                }
             }, {
                 includeSpectrogram: true,
-                probabilityThreshold: 0.75,
+                probabilityThreshold: threshold,
                 invokeCallbackOnNoiseAndUnknown: true,
                 overlapFactor: 0.50
             });
-
-            // Uncomment to auto-stop after 5 seconds:
-            // setTimeout(() => recognizer.stopListening(), 5000);
         }
 
         startBtn.addEventListener("click", init);
+
+        // Initialize timer display with default settings on page load.
+        timerEl.textContent = formatTime(timerLengthSeconds);
     </script>
 </body>
 </html>
