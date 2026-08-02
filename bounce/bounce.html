@@ -234,6 +234,9 @@
             timerEndTimestamp = null;
             timerEl.textContent = formatTime(timerLengthSeconds);
             timerStatusEl.textContent = "Timer reset. Waiting for next bounce to start.";
+
+            bounceCount = 0;
+            bounceCountEl.textContent = bounceCount;
         }
 
         resetTimerBtn.addEventListener("click", resetTimer);
